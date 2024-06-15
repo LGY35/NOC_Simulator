@@ -1,0 +1,9 @@
+﻿  main.cpp
+e:\program\simulator\simulator\main.cpp(66): warning C4305: “=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(221): warning C4305: “+=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(222): warning C4305: “+=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(226): warning C4305: “+=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(227): warning C4305: “+=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(230): warning C4305: “+=”: 从“double”到“float”截断
+e:\program\simulator\simulator\main.cpp(231): warning C4305: “+=”: 从“double”到“float”截断
+  Simulator.vcxproj -> E:\program\Simulator\Debug\Simulator.exe
