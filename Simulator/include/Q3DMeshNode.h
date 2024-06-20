@@ -6,13 +6,15 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+using namespace std;
+
 #define R1 1 // 定义R1虚拟通道标识
 #define R2 2 // 定义R2虚拟通道标识
-using namespace std;
 #define MESSLENGTH 16 // 消息长度定义
-#include "Q3DMesh.h"
-class Q3DMesh; // 声明三维网格类
 
+// #include "Q3DMesh.h"	//TODO: 循环包含？
+
+class Q3DMesh; // 声明三维网格类  // 只需前向声明
 
 // 缓冲区类定义
 class Buffer
@@ -28,7 +30,6 @@ public:
 	int s; // 特殊用途的流量控制缓冲区
 };
 /**************************************************
-
 
 	this class define the info of a flit in the mesh node
 	including nodeid, buffer
@@ -61,8 +62,8 @@ public:
 	int linkxneg; // x轴负方向链接的节点
 	int linkxpos; // x轴正方向链接的节点
 	int linkyneg; // y轴负方向链接的节点
-	int linkyneg; // y轴负方向链接的节点
-	int linkzpos; // z轴正方向链接的节点
+	int linkypos; // y轴负方向链接的节点
+	int linkzneg; // z轴正方向链接的节点
 	int linkzpos; // z轴正方向链接的节点
 
 	Q3DMesh *mesh;	//mesh网络指针

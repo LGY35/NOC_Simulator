@@ -3,7 +3,7 @@
 #ifndef Q3DMESH_H
 #define Q3DMESH_H
 #include "Q3DMeshNode.h"
-class Q3DMeshNode;
+// class Q3DMeshNode;
 class Q3DMesh
 {
 public:
@@ -12,7 +12,6 @@ public:
 	void clearAll();
 	~Q3DMesh()
 	{
-
 		delete[] head;
 	}
 	int getNode() { return k; }

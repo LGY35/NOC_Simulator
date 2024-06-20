@@ -14,13 +14,13 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
-#include "Q2DTorusNode.h"
+#include "Q3DMeshNode.h"
 using namespace std;
 class Buffer;
 class NodeInfo;
 
 /************************
-  Message info
+Message info
   ******************************/
 class Message
 {
