@@ -196,7 +196,7 @@ int main()
 					outtotest(allvecmess, mes);
 					bufferleft(mes, knode);
 					cout << "max:" << max << endl;
-					printf("ponit------- 2222 successful--------------------\r\n");d
+					printf("ponit------- 2222 successful--------------------\r\n");
 					break;
 				}
 
