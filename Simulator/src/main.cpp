@@ -10,7 +10,7 @@
 int ALGORITHM;	  // 实现多个路由算法的时候执行的是哪一个，该程序只实现了一个，用于Routing.cpp中
 int GENERATETYPE; // 用于选择linkrate的增长方式
 int flowalg;	  // 未在代码中使用，可能是用来指定特定的流控算法。
-int totalcircle; // 程序总的运行周期
+long totalcircle; // 程序总的运行周期
 int knode;		 // 二维网络中每维的节点数
 
 int getsize(vector<Message *> *mess);
@@ -19,11 +19,11 @@ int main()
 {
 	for (int allgen = 1; allgen < 2; allgen++)	// 从 allgen = 1 开始，只执行一次，
 	{
-		int threshold = 800; 					// 设置一个阈值，用于控制网络中的消息数量
+		int threshold = 8000; 					// 设置一个阈值，用于控制网络中的消息数量
         Allrouting *rout1 = NULL; 				// 路由器对象指针，初始化为NULL
-        GENERATETYPE = allgen; 					// 设置消息生成类型
+        GENERATETYPE = allgen; 					// 设置消息生成类型			//TODO: 更改消息生成类型，即流量模式  为1表示 uniform流量模式
         flowalg = 1; 							// 流控算法标识符
-        totalcircle = 100000; 					// 设置模拟的总周期数
+        totalcircle = 10000; 					// 设置模拟的总周期数
         knode = 4; 								// 设置网络中每个维度的节点数
         Q3DMesh *mes = NULL; 		 			// 网络结构，3D mesh
         Event *s = NULL; 						// 事件处理对象指针，初始化为NULL
@@ -51,7 +51,7 @@ int main()
 		/***
 		round = 2 : Dimension Order Routing，该程序只实现了xy路由，所以round的值不改变，只为2，循环只在实现多种路由算法时才有意义
 	 ***/
-		//TODO: 更改为其他路由算法时需要把2和3更改即可
+		//TODO: 更改为其他路由算法时，把2和3更改即可
 		for (int round = 2; round < 3; round++) // 仅执行一次循环，用于指定路由算法
 		{
 
@@ -78,7 +78,7 @@ int main()
 
 				case 1:
 				case 2:
-					ALGORITHM = alg[round];			// TODO: 路由算法的更改
+					ALGORITHM = alg[round];			// TODO: 路由算法的更改。此处round = 2 为 DOR算法
 					rout1 = new Routing(mes);
 					break;
 				}
@@ -189,12 +189,14 @@ int main()
 						if (!allvecmess[j].empty())
 						{
 							size += allvecmess[j].size();
+							printf("ponit------- 1111 --------------------\r\n");
 						}
 					}
 					cout << "in the network:      " << size << endl;
 					outtotest(allvecmess, mes);
 					bufferleft(mes, knode);
 					cout << "max:" << max << endl;
+					printf("ponit------- 2222 successful--------------------\r\n");
 					break;
 				}
 
@@ -204,6 +206,8 @@ int main()
 			// 清理资源，准备下一轮模拟
 				for (int m = 0; m < 10; m++)
 				{
+					//正常运行每次都输出10个这行代码
+					//printf("ponit------- 3333 --------------------\r\n");
 					for (vector<Message *>::iterator it = allvecmess[m].begin();
 						it != allvecmess[m].end(); it++)
 						delete (*it);	// 删除所有消息

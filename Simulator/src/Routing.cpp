@@ -80,6 +80,7 @@ NodeInfo *Routing::forward(Q3DMeshNode *cur, Q3DMeshNode *dst)
 
 	// if (wraplink == 1)	// 	return oneWrapLinkrt(cur, dst); // 一个环链路情况下的路由
 	// if (wraplink == 2)	// 	return twoWrapLinkrt(cur, dst); // 两个环链路情况下的路由
+	return nullptr;  
 }
 
 /**********
@@ -215,6 +216,7 @@ int Routing::prefer(Buffer *buff1, Buffer *buff2, Buffer *buff3, int &chn1, int 
 		}
 			return bufferslc;
 	}*/
+	return 0;  // 根据实际逻辑返回适当的整数
 } // 基于缓存空间选择最优缓存路由
 
 
@@ -245,45 +247,75 @@ NodeInfo *Routing::noWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst)
 	int vchy;
 	int vchz;
 
+	// TODO: 这里是DOR算法的实现
+	/************************************************
+	x方向决策:
+		x方向的处理不变，直接根据x方向的坐标差设置。
+	y方向决策:
+		y方向的决策应仅在x方向完全没有距离差时进行（即x方向已经到达或本来就在同一列）。
+	z方向决策:
+		z方向的决策应仅在x和y方向均没有距离差时进行，确保在处理z方向之前，消息已经处于正确的x行和y列。
+	************************************************/
+	
+	// DOR算法，更简洁的实现
 	// 判断X方向
-	if (xdis < 0)
-		var1 = 0; // 负方向
-	else if (xdis == 0)
-		var1 = 1; // 没有移动
-	else  // xdis > 0
-		var1 = 2; // 正方向
-
-	if (xdis == 0)	//只有x等于0的时候 y 才可以移动
-	{
-		if (ydis < 0)
-			var2 = 0;
-		else
-		{
-			if (ydis == 0)
-				var2 = 1;
-			else if (ydis > 0)
-				var2 = 2;
+	if (xdis != 0) {
+		var1 = (xdis < 0) ? 0 : 2;  // 负方向或正方向
+		var2 = 1;  // x方向未完成时，不考虑y方向
+		var3 = 1;  // x方向未完成时，不考虑z方向
+	} else {
+		var1 = 1;  // x方向已完成
+		// 判断Y方向
+		if (ydis != 0) {
+			var2 = (ydis < 0) ? 0 : 2;  // 负方向或正方向
+			var3 = 1;  // y方向未完成时，不考虑z方向
+		} else {
+			var2 = 1;  // y方向已完成
+			// 判断Z方向
+			var3 = (zdis < 0) ? 0 : (zdis > 0 ? 2 : 1);  // 负方向、正方向或已完成
 		}
 	}
-	else
-	{
-		var2 = 1; // xy路由算法：x方向的偏移不为0时,不能走y方向
-	}
 
-	// TODO: west-first 里面 是去掉几个可能的转弯，所以这里是不是不只是这么简单的判断
-	if(xdis == 0 && ydis == 0)
-	{
-		if (zdis < 0)
-			var3 = 0;
-		else if (zdis == 0)
-			var3 = 1;
-		else 
-			var3 = 2;
-	}
-	else
-	{
-		var3 = 1; // xyz路由算法：x 和 y方向的偏移不全为0时,不能走z方向
-	}
+	
+	// // 判断X方向
+	// if (xdis < 0)
+	// 	var1 = 0; // 负方向
+	// else if (xdis == 0)
+	// 	var1 = 1; // 没有移动
+	// else  // xdis > 0
+	// 	var1 = 2; // 正方向
+
+	// if (xdis == 0)	//只有x等于0的时候 y 才可以移动
+	// {
+	// 	if (ydis < 0)
+	// 		var2 = 0;
+	// 	else
+	// 	{
+	// 		if (ydis == 0)
+	// 			var2 = 1;
+	// 		else if (ydis > 0)
+	// 			var2 = 2;
+	// 	}
+	// }
+	// else
+	// {
+	// 	var2 = 1; // xy路由算法：x方向的偏移不为0时,不能走y方向
+	// }
+
+	
+	// if(xdis == 0 && ydis == 0)
+	// {
+	// 	if (zdis < 0)
+	// 		var3 = 0;
+	// 	else if (zdis == 0)
+	// 		var3 = 1;
+	// 	else 
+	// 		var3 = 2;
+	// }
+	// else
+	// {
+	// 	var3 = 1; // xyz路由算法：x 和 y方向的偏移不全为0时,不能走z方向
+	// }
 
 	Buffer *xlink[3] = {cur->bufferxneglink, NULL, cur->bufferxposlink};
 	Buffer *ylink[3] = {cur->bufferyneglink, NULL, cur->bufferyposlink};
@@ -336,4 +368,33 @@ NodeInfo *Routing::noWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst)
 		}
 		return next;
 	}
+	return nullptr;  // 或返回适当的NodeInfo对象指针
 }
+
+/************************************************************************************
+变量解释
+cur, dst: 分别代表当前节点和目标节点的指针。
+xdis, ydis, zdis: 目标节点与当前节点在x、y、z轴上的距离差。
+var1, var2, var3: 用于根据坐标差选择缓冲区的变量，对应x、y、z方向。
+xlink, ylink, zlink: 分别表示x、y、z方向的缓冲区链接数组。
+xlinknode, ylinknode, zlinknode: 分别表示x、y、z方向连接的节点索引。
+vchx, vchy, vchz: x、y、z方向上使用的虚拟通道。
+
+坐标差计算:
+xdis, ydis, zdis 根据目标节点与当前节点的坐标差计算出在三个方向上的距离差。
+
+方向选择:
+var1, var2, var3 通过坐标差来确定消息传输的方向。var1 对应x方向，var2 对应y方向，var3 对应z方向。
+var1 直接根据x方向的距离差设置，不受其他轴影响。
+var2 只有在x方向无偏移时才考虑y方向的移动，实现了维度有序路由（Dimension Order Routing, DOR）的特性。
+var3 只有在x和y方向均无偏移时才考虑z方向的移动，这进一步限制了在x或y有偏移时，z方向的移动。
+
+缓冲区和链路选择:
+使用数组（xlink, ylink, zlink）和条件变量（var1, var2, var3）来选择适当的缓冲区。
+根据选择的方向，从对应的链接数组中选取节点和缓冲区。
+
+决策输出:
+根据缓冲区选择的结果（bufferslc），设置next结构的节点和通道。
+case 0 表示没有可用的缓冲区，节点设置为-1。
+case 1, 2, 3 分别对应选择x、y、z方向的缓冲区和节点。
+*************************************************************************************/

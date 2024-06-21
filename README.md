@@ -44,7 +44,19 @@
 
 # 调试
 
+> 一个小问题：
+>
+> #### 循环依赖include问题：
+>
+> 解决：
+>
+> 在 `Q3DMeshNode.h` 中继续使用前向声明 `class Q3DMesh;`。
+>
+> 在 `Q3DMesh.h` 中包含 `Q3DMeshNode.h` 以获取 `Q3DMeshNode` 的完整定义。
+>
+> 确保在 `Q3DMeshNode.cpp` 中包含 `Q3DMesh.h`，以便编译器在实现文件中了解完整的类定义。
 
+## 	GDB与core的使用
 
 ### 使用调试器定位错误
 
@@ -73,7 +85,11 @@ gdb ./build/NOC
 (gdb) print *mesh
 ```
 
-==r为一直执行，n为单步执行。p为输出print==
+==r为一直执行，n为单步执行。p为输出print，b为设置断点break，clear 删除所有断点 delete <Num> 删除编号为Num的断点==
+
+==list src/main.cpp:107来查看特定的文件和行号。jump命令用于改变程序的执行流程==
+
+
 
 **调试之后的输出：**
 
@@ -158,7 +174,9 @@ debug: $(BUILD_DIR)/$(TARGET_EXEC)  # 新增 debug 目标
 
 make debug是单纯用来启动gdb的。
 
-### 问题：
+## 问题：
+
+### 问题1：
 
 ```bash
 Program received signal SIGSEGV, Segmentation fault.
@@ -295,15 +313,207 @@ int id = x + y * k + z * k * k;          // 线性索引最大值为 3 + 3*4 + 3
 
 
 
-### 循环依赖include问题：
 
-解决：
 
-在 `Q3DMeshNode.h` 中继续使用前向声明 `class Q3DMesh;`。
+### 问题2：
 
-在 `Q3DMesh.h` 中包含 `Q3DMeshNode.h` 以获取 `Q3DMeshNode` 的完整定义。
+上面的问题解决之后：
 
-确保在 `Q3DMeshNode.cpp` 中包含 `Q3DMesh.h`，以便编译器在实现文件中了解完整的类定义。
+```c++
+linkrate:0.01    arrive:  7    in the network : 93
+average latency: 18.5714  nomalized accepted traffic: 0.0007
+
+
+
+linkrate:0.06    arrive:  31    in the network : 569
+average latency: 18.0645  nomalized accepted traffic: 0.0031
+
+
+
+linkrate:0.11    arrive:  28    in the network : 800
+average latency: 18.0714  nomalized accepted traffic: 0.00371981
+
+Saturation point, drain.......
+in the network:      175
+
+Program received signal SIGSEGV, Segmentation fault.
+0x0000555555558795 in outtotest (allvecmess=0x7fffffffd6b0, mes=0x555555581d40) at src/testfuc.cpp:30
+30                      << " tail:( " << (*mes)[(*it)->routpath[19].node]->x << " ," << (*mes)[(*it)->routpath[19].node]->y << ", " << (*mes)[(*it)->routpath[19].node]->z << ")"
+(gdb) bt
+#0  0x0000555555558795 in outtotest (allvecmess=0x7fffffffd6b0, mes=0x555555581d40) at src/testfuc.cpp:30
+#1  0x000055555555a867 in main () at src/main.cpp:195
+(gdb) print (*it)->routpath[19].node
+$2 = -136647936
+```
+
+发现了新问题，发现`in the network : 800`，而main里面`int threshold = 2500; // 设置一个阈值，用于控制网络中的消息数量，`，而且`Saturation point, drain.......`输出了，所以问题出现在，消息数量已经超过了设定的阈值。
+
+但是增大阈值之后也是出错，所以问题不只是这个。因为还有一个totalcircle的变量，两个任意一个满足了都会输出S`aturation point, drain.......`，然后结束程序。
+
+==所以，其实还是要分析代码的功能：如下，在分析代码的功能过程中，其实这个地方还是有错误的，还是要解决。==
+
+
+
+## 分析代码的功能：
+
+> 最后提交源代码（有注释和文档说明）以及平均延迟和吞吐量的实验结果。
+>
+> 实验结果指的是`随着注入率的增加，平均延迟和吞吐量的变化曲线`，如文件夹中实验结果样例图所示：一`个是average latency，一个是throughput，横坐标可以是代码中的linkrate，展示随着linkrate的增加average latency和throughput如何变化的曲线`，到饱和点就可以了。`饱和点指的是average latency迅速增加，throughput下降的那个点`。
+>
+> ![image-20240620210554423](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240620210554423.png)
+
+
+
+**代码中：吞吐量、延迟和注入率的计算与展示如下：**
+
+1. **注入率 (linkrate)**: 是控制消息产生速率的参数，根据它计算每个周期每个节点应该生成的消息数。在代码中，`linkrate` 从 `0.01` 开始，逐步增加，用于模拟不同负载下的网络性能。
+
+2. **平均延迟 (average latency)**: 这是测量网络中消息从发送到接收的平均时间。在代码中，平均延迟的计算方式是 `s->totalcir / s->messarrive`，其中 `s->totalcir` 是消息在网络中累计花费的周期数，而 `s->messarrive` 是到达目的地的消息数量。输出语句中表示为：
+
+   ```
+   cout << "average latency: " << (s->totalcir / s->messarrive) << "  nomalized accepted traffic: " << linkrate * ((float)s->messarrive / allmess) << endl;
+   ```
+
+3. **吞吐量 (throughput)**: 这是网络每秒能处理的数据量。在代码中，吞吐量通过 `linkrate * ((float)s->messarrive / allmess)` 计算，它基于实际到达目的地的消息数与总生成消息数的比率，调整为当前的链路利用率 `linkrate`。输出语句中表示为 `nomalized accepted traffic`。
+
+4. **饱和点**: 这是网络性能测试中，当进一步增加负载不再导致吞吐量增加，反而使得延迟迅速增加的点。在代码中，饱和点的判定基于吞吐量的变化小于 `0.01` 的比率，并且当 `getsize(allvecmess) < threshold`（意味着网络中的消息数量没有达到阈值）时，认为网络达到饱和。
+
+5. **数据输出和图形生成**: 您提到需要提交平均延迟和吞吐量的实验结果，包括变化曲线。这通常需要收集这些数据并使用绘图工具（如Excel，Python的matplotlib库，或其他科学计算软件）来生成图表。数据是从程序输出（例如写入的文件或控制台输出）中收集的，然后根据这些数据绘制延迟和吞吐量随注入率的变化曲线。
+
+
+
+> 输出：
+>
+> ```c++
+> linkrate:0.01    arrive:  1    in the network : 9
+> average latency: 19  nomalized accepted traffic: 0.001
+> 
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> 
+> 
+> linkrate:0.06    arrive:  9    in the network : 51
+> average latency: 18.5556  nomalized accepted traffic: 0.009
+> 
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> 
+> 
+> linkrate:0.11    arrive:  15    in the network : 95
+> average latency: 18.8  nomalized accepted traffic: 0.015
+> 
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> ponit------- 3333 --------------------
+> 
+> 
+> linkrate:0.16    arrive:  15    in the network : 145
+> average latency: 19.1333  nomalized accepted traffic: 0.015
+> 
+> Saturation point, drain.......
+> ponit------- 1111 --------------------
+> ponit------- 1111 --------------------
+> ponit------- 1111 --------------------
+> ponit------- 1111 --------------------
+> in the network:      103
+> Segmentation fault (core dumped)
+> make: *** [Makefile:34: run] Error 139
+> ```
+>
+> ### 输出：
+>
+> ```
+> linkrate:0.16    arrive:  15    in the network : 145
+> average latency: 19.1333  nomalized accepted traffic: 0.015
+> ```
+>
+> 每个指标的详细解释：
+>
+> 1. **linkrate: 0.16**
+>    这表示链路利用率为0.16。这是一个测量网络负载程度的指标，显示了网络链路上流量的比例。值为0.16意味着链路的16%正在被使用，这是一个评估网络负载的指标。
+> 2. **arrive: 15**
+>    这指的是在当前模拟周期内，有15个消息成功到达了它们的目的地。这个数字是衡量网络效率和性能的一个直接指标，显示了在一定时间内成功完成的传输数量。
+> 3. **in the network: 145**
+>    这表示在模拟的当前时间点，网络中总共有145个消息正在传输过程中。这包括了所有在途中、等待中或处理中的消息。这个指标有助于了解网络的拥堵程度以及系统当前的活跃程度。
+> 4. **average latency: 19.1333**
+>    平均延迟是指消息从源到目的地平均所花费的时间，这里是19.1333个时间单位。这是网络性能的一个关键指标，用于评估消息在网络中传输的速度和效率。
+> 5. **nomalized accepted traffic: 0.015**
+>    归一化接受流量是一个衡量网络容量被利用程度的指标。在这里，它的值是0.015，意味着从理论上讲，每个周期每个节点可以处理的流量中有1.5%被成功处理了。这通常用于评估网络的总体吞吐量性能。
+>
+> point——是在代码中加的用于调试的：
+>
+> ```c++
+> if (linkrate * ((float)s->messarrive / allmess) > max && ((linkrate * ((float)s->messarrive / allmess) - max) / max) > 0.01 && getsize(allvecmess) < threshold)
+> 					max = linkrate * ((float)s->messarrive / allmess);
+> 
+> 				else
+> 				{
+> 					cout << "Saturation point, drain......." << endl;
+> 					drain(allvecmess, mes, s);		 // 当达到饱和点时，清空网络并输出相关信息
+> 					int size = 0;
+> 					for (int j = 0; j < 10; j++)
+> 					{
+> 						if (!allvecmess[j].empty())
+> 						{
+> 							size += allvecmess[j].size();
+> 							printf("ponit------- 1111 --------------------\r\n");
+> 						}
+> 					}
+> 					cout << "in the network:      " << size << endl;
+> 					outtotest(allvecmess, mes);
+> 					bufferleft(mes, knode);
+> 					cout << "max:" << max << endl;
+> 					printf("ponit------- 2222 --------------------\r\n");
+> 					break;
+> 				}
+> 
+> 				/************************************************************************************
+> 								clean
+>  *******************************************************************************************/
+> 			// 清理资源，准备下一轮模拟
+> 				for (int m = 0; m < 10; m++)
+> 				{
+> 					printf("ponit------- 3333 --------------------\r\n");
+> 					for (vector<Message *>::iterator it = allvecmess[m].begin();
+> 						it != allvecmess[m].end(); it++)
+> 						delete (*it);	// 删除所有消息
+> 				}
+> 				delete rout1;			// 删除路由对象
+> 				delete mes;				// 删除网络结构对象
+> 				delete s;				// 删除事件处理对象
+> 
+> ```
+>
+> 但是可以看到，饱和的时候，只是printf("ponit------- 1111 --------------------\r\n");，
+>
+> 而没有能够printf("ponit------- 2222 --------------------\r\n");，说明
+>
+> ![image-20240620213947263](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240620213947263.png)
+>
+> 这个代码确实还是segment fault 有问题，所以还是要去检查。
 
 
 

@@ -48,5 +48,6 @@ debug: $(BUILD_DIR)/$(TARGET_EXEC)  # 新增 debug 目标
 .PHONY: clean
 clean:
 	rm -r $(BUILD_DIR)
+	rm -f ./core*
 
 -include $(DEPS)

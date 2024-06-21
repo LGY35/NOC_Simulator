@@ -64,7 +64,7 @@ void drain(vector<Message *> *allvecmess, Q3DMesh *mes, Event *s)
         for (vector<Message *>::iterator it = vecmess.begin(); it != vecmess.end(); it++)
         {
             // 检查消息是否需要释放占用的链路
-            if ((*it)->releaselink)
+            if ((*it)->releaselink == true)
             {
                 assert((*it)->routpath[MESSLENGTH - 1].buff->linkused);  // 断言最后一个消息片段的缓冲区是被使用的
                 (*it)->routpath[MESSLENGTH - 1].buff->linkused = false;  // 释放链路
@@ -74,52 +74,16 @@ void drain(vector<Message *> *allvecmess, Q3DMesh *mes, Event *s)
 
         for (vector<Message *>::iterator it = vecmess.begin(); it != vecmess.end();)
         {
-            if (!(*it)->active || (*it)->routpath[0].node == (*it)->src)
+            if ((*it)->active == false || (*it)->routpath[0].node == (*it)->src)
             {  // 如果消息已经到达目的地或者不再活跃
                 delete *it;  // 删除消息对象
                 it = vecmess.erase(it);  // 从容器中移除
             }
             else
             {
-                s->forwardMes(*(*it));  // 调用forwardMes来处理消息的下一步
-                ++it;  // 移动迭代器到下一个元素
+                s->forwardMes(*(*it++)); // 调用forwardMes来处理消息的下一步 // 移动迭代器到下一个元素
             }
         }
     }
 }
 
-
-// //处理消息的流转和释放 
-// void drain(vector<Message *> *allvecmess, Q3DMesh *mes, Event *s)
-// {
-
-// 	for (int i = 0; i < 10000; i++)
-// 	{
-
-// 		vector<Message *> &vecmess = allvecmess[i % 10];
-// 		for (vector<Message *>::iterator it = vecmess.begin(); it != vecmess.end(); it++)
-// 		{
-
-// 			// if the tail of a message shifts ,
-// 			// the physical link the message  occupied should release.
-
-// 			if ((*it)->releaselink == true)
-// 			{
-// 				assert((*it)->routpath[MESSLENGTH - 1].buff->linkused);
-// 				(*it)->routpath[MESSLENGTH - 1].buff->linkused = false;
-// 				(*it)->releaselink = false;
-// 			}
-// 		}
-
-// 		for (vector<Message *>::iterator it = vecmess.begin(); it != vecmess.end();)
-// 		{
-// 			if ((*it)->active == false || (*it)->routpath[0].node == (*it)->src)
-// 			{ // when a message arrive at its destination, it is not active
-// 				delete (*it);
-// 				it = vecmess.erase(it);
-// 			}
-// 			else
-// 				s->forwardMes(*(*it++));
-// 		}
-// 	}
-// }
