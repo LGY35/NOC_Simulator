@@ -217,7 +217,7 @@ NodeInfo *Routing2::xdimension(const Message &s)
 	// if (xdis < -k / 2 && curx == k - 1)	//当目标节点在x方向上相对于当前节点的距离小于负网格尺寸的一半（即目标在当前节点左侧超过半网格距离），并且当前节点的x坐标为网格的最大值（k - 1，假设网格从0到k-1编号），则同样表示消息需要使用环绕链接跨越到网格的另一侧。
 	// 	special = true;
 	// if ((xdis <= k / 2 && xdis >= -k / 2) && (ydis <= k / 2 && ydis >= -k / 2) && (zdis <= k / 2 && zdis >= -k / 2))	//这行代码检查目标节点是否在当前节点的一个合理的非环绕距离内，即目标节点在x和y方向上的距离都不超过网格尺寸的一半。这种情况下，消息可以直接通过常规链接传递，无需使用环绕链接。
-	// 	special = false;		// TODO: 这里原代码是不是写错了，应该为 false	回答：是的，这里写错了。
+	// 	special = false;		// TODO: 这里原代码是不是写错了，应该为 false	回答：写错了，应该为false。
 
 	if (xlink[xdis > 0]->r1 < MESSLENGTH && !special)// 如果不是特殊情况且没有足够的缓冲区，则返回NULL
 		return NULL;

@@ -19,7 +19,7 @@ int main()
 {
 	for (int allgen = 1; allgen < 2; allgen++)	// 从 allgen = 1 开始，只执行一次，
 	{
-		int threshold = 8000; 					// 设置一个阈值，用于控制网络中的消息数量
+		int threshold = 80000; 					// 设置一个阈值，用于控制网络中的消息数量
         Allrouting *rout1 = NULL; 				// 路由器对象指针，初始化为NULL
         GENERATETYPE = allgen; 					// 设置消息生成类型			//TODO: 更改消息生成类型，即流量模式  为1表示 uniform流量模式
         flowalg = 1; 							// 流控算法标识符
@@ -30,12 +30,12 @@ int main()
         int r1, r2; 							// 用于存储虚拟通道的缓存大小
         string gen[5] = {"0", "1", "2", "3", "4"}; 	// 生成类型标识符数组
         string filename[5] = {
-			"../data/Bubble Flow",
-			"../data/clue-WF", 
-			"../data/clue-DOR",
-			"../data/FCclue-DOR",
-			"../data/FCclue-WF",
-		}; // 相对于 main.cpp 的路径 // 结果的输出文件路径，因为以前实现了5种路由算法，所以这里有5个文件路径
+			"./data/Bubble Flow",
+			"./data/clue-WF", 	
+			"./data/clue-DOR",	//是相对于makefile的路径，所以只需要1个.即可
+			"./data/FCclue-DOR",
+			"./data/FCclue-WF",
+		}; // 相对于 main.cpp 的路径(应该不是相对于main，而是相对于makefile) // 结果的输出文件路径，因为以前实现了5种路由算法，所以这里有5个文件路径
 
 		for (int lop = 0; lop < 5; lop++)	 // 循环更新文件名中的生成类型
 		{
@@ -189,14 +189,14 @@ int main()
 						if (!allvecmess[j].empty())
 						{
 							size += allvecmess[j].size();
-							printf("ponit------- 1111 --------------------\r\n");
+							// printf("ponit------- 1111 --------------------\r\n"); //for debug
 						}
 					}
 					cout << "in the network:      " << size << endl;
 					outtotest(allvecmess, mes);
 					bufferleft(mes, knode);
 					cout << "max:" << max << endl;
-					printf("ponit------- 2222 successful--------------------\r\n");
+					// printf("ponit------- 2222 successful--------------------\r\n");	//for debug
 					break;
 				}
 
@@ -207,7 +207,7 @@ int main()
 				for (int m = 0; m < 10; m++)
 				{
 					//正常运行每次都输出10个这行代码
-					//printf("ponit------- 3333 --------------------\r\n");
+					// printf("ponit------- 3333 --------------------\r\n");
 					for (vector<Message *>::iterator it = allvecmess[m].begin();
 						it != allvecmess[m].end(); it++)
 						delete (*it);	// 删除所有消息
@@ -244,5 +244,6 @@ int main()
 			} // each linkrate end
 		} // round end
 	}	// end for allgen
-	return 1;
+	// printf("ponit------- 4444 --------------------\r\n");	//for debug
+	return 0;	// return 1
 }

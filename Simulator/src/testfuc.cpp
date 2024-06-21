@@ -26,8 +26,8 @@ void outtotest(vector<Message *> *allvecmess, Q3DMesh *mes)
                 << "  src: ( " << (*mes)[(*it)->src]->x << " ," << (*mes)[(*it)->src]->y << ", " << (*mes)[(*it)->src]->z << ")"
                 << " dst: ( " << (*mes)[(*it)->dst]->x << " ," << (*mes)[(*it)->dst]->y << ", " << (*mes)[(*it)->dst]->z << ")"
                 << " head:( " << (*mes)[(*it)->routpath[0].node]->x << " ," << (*mes)[(*it)->routpath[0].node]->y << ", " << (*mes)[(*it)->routpath[0].node]->z 
-                << ", R" << (*it)->routpath[0].channel << ")"  
-                << " tail:( " << (*mes)[(*it)->routpath[19].node]->x << " ," << (*mes)[(*it)->routpath[19].node]->y << ", " << (*mes)[(*it)->routpath[19].node]->z << ")"
+                << ", R" << (*it)->routpath[0].channel << ")"//<<endl;
+                << " tail:( " << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->x << " ," << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->y << ", " << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->z << ")"
                 << endl;
         }
     }
