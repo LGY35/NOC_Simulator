@@ -56,7 +56,7 @@ int Routing::chkWrplnk(Q3DMeshNode *cur, Q3DMeshNode *dst)
 
 	int wraplink = 0; // 环链路数初始化为0
 
-	// 不需要环链路； TODO: 下面的环链路单纯的复制了一下，但是没有改动
+	// 不需要环链路；
 	// if (((curx < dstx) && (dstx - curx) > (k / 2)) || ((curx > dstx) && (curx - dstx) > (k / 2)))	// 	wraplink++; // 检查x轴上是否需要环链路
 	// if (((cury < dsty) && (dsty - cury) > (k / 2)) || ((cury > dsty) && (cury - dsty) > (k / 2)))	// 	wraplink++; // 检查y轴上是否需要环链路
 	// if (((curz < dstz) && (dsty - curz) > (k / 2)) || ((curz > dstz) && (curz - dstz) > (k / 2)))	// 	wraplink++; // 检查y轴上是否需要环链路

@@ -33,8 +33,8 @@ public:
     NodeInfo *forward(Message &); // 根据消息推导出下一个节点。
     NodeInfo *forward(Q3DMeshNode *cur, Q3DMeshNode *dst); // 根据当前和目标节点计算下一步节点。
     NodeInfo *noWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst); // 不需要环链路的路由计算。
-    NodeInfo *oneWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst); // 需要一个环链路的路由计算。
-    NodeInfo *twoWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst); // 需要两个环链路的路由计算。
+    // NodeInfo *oneWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst); // 需要一个环链路的路由计算。
+    // NodeInfo *twoWrapLinkrt(Q3DMeshNode *cur, Q3DMeshNode *dst); // 需要两个环链路的路由计算。
 
     int prefer(Buffer *buff1, Buffer *buff2, Buffer *buff3, int &chn1, int &chn2, int &chn3, Buffer *&buff); // 根据缓存区优先级决定消息的路由。
 };

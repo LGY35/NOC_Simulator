@@ -12,7 +12,7 @@ using namespace std;
 #define R2 2 // 定义R2虚拟通道标识
 #define MESSLENGTH 16 // 消息长度定义
 
-// #include "Q3DMesh.h"	//TODO: 循环包含？
+// #include "Q3DMesh.h"	//TODO: 循环包含,已经解决
 
 class Q3DMesh; // 声明三维网格类  // 只需前向声明
 

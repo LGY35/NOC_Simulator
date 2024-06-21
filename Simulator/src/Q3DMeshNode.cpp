@@ -167,3 +167,4 @@ void Q3DMeshNode::setMesh(Q3DMesh *mesh)
 }//这个函数报错：
 // Program received signal SIGSEGV, Segmentation fault.
 // 0x0000555555556c1e in Q3DMeshNode::setMesh(Q3DMesh*) ()
+//修改在Q3DMesh.cpp中Q3DMesh::Q3DMesh类构造函数中。

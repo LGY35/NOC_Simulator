@@ -517,6 +517,280 @@ $2 = -136647936
 
 
 
+
+
+## 问题-遗漏代码未修改
+
+> **Routing2.h：**
+>
+> ​    负责路由信息相关，增加z维度即可。
+>
+> ![image-20240621193701046](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240621193701046.png)
+>
+> **Routing2.cpp：**
+>
+> ​    `NodeInfo *Routing2::forward(Message &s)`实现的是一个**多维路由选择算法**，用于在一个3D Mesh网络中决定数据包（消息）的传输路径。
+>
+> /*
+>
+> 这段代码实现的是一个多维路由选择算法，用于在一个3D Mesh网络中决定数据包（消息）的传输路径。
+>
+> 是一种自适应路由算法，因为它考虑了不同方向上缓冲区的使用情况来动态选择最佳的传输路径。
+>
+> 这种算法尤其适用于多维网络结构，如3D Mesh，能有效减少拥塞并平衡负载。
+>
+> 
+>
+> ##### 选择最大缓冲区的含义：
+>
+> 在多维网络（如3D Mesh）中，每个方向（x, y, z）都可能有独立的缓冲区。
+>
+> *next = *temp1; 这行代码实际上是将 temp1（表示在x方向上的下一个节点及其相关信息）的内容赋给 next，这意味着路由算法决定沿x方向发送消息。
+>
+> 当决定使用某个维度时，通常考虑的是该方向上缓冲区的可用性。这里的 "x维度缓冲区最大" 指的是与其他可用维度相比，x方向的缓冲区（合并R1和R2缓冲区）拥有最大的剩余容量。
+>
+> **减少拥塞**：选择缓冲区最大的维度可以帮助避免路由拥塞，因为更大的缓冲区意味着更高的处理能力和更低的拥塞可能性。
+>
+> **平衡负载**：通过动态选择最佳路由路径，算法可以更有效地分散网络流量，减少某一路径上的压力，从而实现更均匀的网络负载分布。
+>
+> **提高效率**：使用最大缓冲区的路由可能意味着该路径下的处理和转发延迟更低，因此可以提高整体网络性能。
+>
+> */
+>
+> **关键特点包括：**
+>
+> 1. **多维考量**：根据消息在x、y、z三个维度上的目标节点位置差（即距离差），动态决定消息的转发路径。
+> 2. **缓冲区自适应选择**：在选择路径时，算法会考虑各个方向的缓冲区大小，优先选择缓冲区资源充足的路径，以减少因缓冲区不足造成的阻塞。
+> 3. **环绕链路处理**：特别处理跨越环绕链路的情况，即当目标节点在某维度上的距离超过一半网格尺寸时，可能会通过环绕链路（如果存在）进行路由，以缩短实际传输距离。
+> 4. **动态链路使用标记**：对所选路径上的链路进行标记，表示其正在被使用，这有助于后续的路由决策。
+>
+> ```c++
+> NodeInfo *Routing2::forward(Message &s)
+> {
+> 
+> 	int var1 = 0;
+> 	int var2 = 0;
+> 	int var3 = 0;
+> 	int var = 0;
+> 	next->node = -1;	// 初始化下一个节点标志为无效
+> 	next->buff = NULL;	// 初始化下一个缓冲区指针为NULL
+> 
+> 	// 调用xdimension函数和ydimension函数和zdimension函数来尝试在两个维度上确定路由路径
+> 	NodeInfo *temp1 = xdimension(s);	//临时节点
+> 	NodeInfo *temp2 = ydimension(s);
+> 	NodeInfo *temp3 = zdimension(s);
+> 
+> 	// 如果在x维或y维或z维找到合适的路由节点，相应的var1或var2或var3设为1
+> 	if (temp1 != NULL)
+> 		var1 = 1;
+> 	if (temp2 != NULL)
+> 		var2 = 1;
+> 	if (temp3 != NULL)
+> 		var3 = 1;
+> 	// 计算缓冲区大小，决定采用哪个维度的路由信息
+> 	int allbuff1 = 0;
+> 	int allbuff2 = 0;
+> 	int allbuff3 = 0;
+> 	// 计算var值，用于决定采用哪个维度的路由信息         原来是2D的，所以为 0：表示没有维度是可用的。1：表示只有第二个维度（y维）是可用的。2：表示只有第一个维度（x维）是可用的。3：表示两个维度都是可用的。
+> 	//这里是采用二进制编码，改成3位就变成 a*4 + b*2 + c
+> 	var = var1 * 4 + var2 * 2 + var3;
+> 	/*********** 编码 ****************
+> 		0：没有维度是可用的。
+> 		1：只有 z 维度是可用的。
+> 		2：只有 y 维度是可用的。
+> 		3：y 和 z 维度都是可用的。
+> 		4：只有 x 维度是可用的。
+> 		5：x 和 z 维度都是可用的。
+> 		6：x 和 y 维度都是可用的。
+> 		7：x、y 和 z 维度都是可用的。
+> 	*********************************/
+> 
+> 	switch (var)
+> 	{
+> 	case 7:	// 所有维度都有可用的路由节点
+> 		allbuff1 = temp1->buff->r1 + temp1->buff->r2;// 计算x维度缓冲区的总大小
+> 		allbuff2 = temp2->buff->r1 + temp2->buff->r2;// 计算y维度缓冲区的总大小
+> 		allbuff3 = temp3->buff->r1 + temp3->buff->r2;// 计算z维度缓冲区的总大小
+> 		// 三个维度都可用的情况下，通过buffer大小来判断
+> 		if (allbuff1 >= allbuff2 && allbuff1 >= allbuff3) 			//如果x维度缓冲区最大
+> 		{		
+> 			*next = *temp1;											//x维度
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+> 		} 
+> 		else if (allbuff2 >= allbuff3) 		//如果y维度最大
+> 		{	
+> 			*next = *temp2;
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+> 		} 
+> 		else 														//如果z维度最大			
+> 		{											
+> 			*next = *temp3;
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+> 		}
+> 		break;
+> 	case 6: // x 和 y 可用
+>             if (temp1->buff->r1 + temp1->buff->r2 >= temp2->buff->r1 + temp2->buff->r2) 
+>             {
+> 				*next = *temp1;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+> 			else 
+>             {
+> 				*next = *temp2;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+>             break;
+> 	case 5: // x 和 z 可用
+>             if (temp1->buff->r1 + temp1->buff->r2 >= temp3->buff->r1 + temp3->buff->r2) 
+>             {
+> 				*next = *temp1;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+> 			else 
+>             {
+> 				*next = *temp3;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+>             break;
+> 	case 3: // y 和 z 可用
+>             if (temp2->buff->r1 + temp2->buff->r2 >= temp3->buff->r1 + temp3->buff->r2) 
+>             {
+> 				*next = *temp2;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+>             else
+>             {
+> 				*next = *temp3;
+> 				next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 				next->buff->linkused = true; // 标记链路为已使用
+> 			}
+>             break;
+> 	case 4: // 只有 x 可用
+>             *next = *temp1;
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+>             break;
+>     case 2: // 只有 y 可用
+>             *next = *temp2;
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+>             break;
+>     case 1: // 只有 z 可用
+>             *next = *temp3;
+> 			next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 			next->buff->linkused = true; // 标记链路为已使用
+>             break;
+> 	default: // 没有可用的
+>             next->node = -1;
+>             break;
+> 	}
+> 
+> 
+> // ----------------------- 注释：原来2D mesh的判断 -----------------------------------------
+> 	// if (var == 7)	// 如果两个维度都有可用的路由节点
+> 	// {
+> 	// 	allbuff1 = temp1->buff->r1 + temp1->buff->r2;// 计算x维度缓冲区的总大小
+> 	// 	allbuff2 = temp2->buff->r1 + temp2->buff->r2;// 计算y维度缓冲区的总大小
+> 	// 	allbuff2 = temp3->buff->r1 + temp3->buff->r2;// 计算z维度缓冲区的总大小
+> 	// }
+> 
+> 	// if (var == 2 || (var == 3 && allbuff1 >= allbuff2))
+> 	// {		 		// 如果只有y维度有效或者两个维度都有效但x维度缓冲区更大
+> 	// 	*next = *temp1;		// 选择x维度的路由
+> 	// 	next->buff->bufferMin(next->channel, MESSLENGTH);// 更新缓冲区信息
+> 	// 	next->buff->linkused = true; // 标记链路为已使用
+> 	// }
+> 
+> 	// else if (var == 1 || (var == 3 && allbuff1 < allbuff2))
+> 	// {				// 如果只有x维度有效或者两个维度都有效但y维度缓冲区更大
+> 	// 	*next = *temp2;		// 选择y维度的路由
+> 	// 	next->buff->bufferMin(next->channel, MESSLENGTH); // 更新缓冲区信息
+> 	// 	next->buff->linkused = true;	// 标记链路为已使用
+> 	// }
+> 
+> 	return next;	 // 返回下一个节点的信息
+> }
+> ```
+>
+> 
+
+
+
+之前这里只是2D的，也就是注释的部分，没有z维度的判断。
+
+而下面有处理沿xyz三个维度的路由决策函数。比如下面x的：
+
+![image-20240621200231888](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240621200231888.png)
+
+==这里有关于routpath的部分，所以之前的segment fault很有可能就是这里的问题。==
+
+需要修改：
+
+> `xdimension` 函数的代码主要处理沿 x 维度的路由决策，适用于一个具有环绕链路的 3D Mesh 网络。以下是一些可能需要修改或确认的地方：
+>
+> 1. **环绕链路处理**：
+>    - ==当距离超过半个网格大小时，代码尝试通过交换链路和节点索引来处理环绕链路，这适用于环状（torus）网格。如果是在一个没有环绕链路的3D Mesh中，这段代码将不适用，因为环绕链路不存在。==
+> 2. **链路使用情况判断**：
+>    - 在判断链路是否被使用时，您需要确认 `linkused` 的逻辑是否正确实现，并确保它正确地反映了链路的使用状态。
+> 3. **缓冲区容量判断**：
+>    - 您的代码在决定是否可以使用一个方向的链路时，检查了 `r1` 和 `r2` 通道的缓冲区容量。这是正确的，但需要确保 `xlink[xdis > 0]` 的索引安全性和逻辑正确性（考虑 xdis 正负和数组界限）。
+> 4. **特殊情况处理**：
+>    - 特殊情况的逻辑（`special` 变量）似乎是为了处理特定的环绕链路情况。这个逻辑在当前形式下可能有误，因为您在任何情况下都将 `special` 设为 `true`，这可能不是您的预期。
+> 5. **返回值构造**：
+>    - 代码中假设了存在一个 `xtemp` 的局部变量，但实际上没有看到相关的定义。这可能是一个遗漏，需要创建一个 `NodeInfo` 类型的变量 `xtemp` 并在返回之前正确设置其值。
+
+==修改 处理沿xyz三个维度的路由决策函数：==
+
+首先3D mesh中无环链路，所以关于链路判断的部分可以删除，下面是x维度的部分，y、z维度相同，都要删除。
+
+![image-20240621202327879](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240621202327879.png)
+
+
+
+
+
+## 流控机制 wormhole
+
+Event.cpp代码描述了一种使用在计算机网络中的 **wormhole路由**（wormhole routing）的流量控制机制。在wormhole路由中，数据包（通常被分割为更小的单元称为flits）被分段传输。一旦头部flit（header flit）为自身找到了前进的路径，后续的flits会跟随相同的路径前进，而不需要为每个flit重新确定路径。
+
+在wormhole路由中，flits几乎立即离开路由器，并在下游缓冲区中紧随其后的flits可用时继续前进，这显著降低了延迟，因为它最小化了flits在任何给定路由器中的驻留时间。关键特征如下：
+
+1. **Header flit决定路径**：只有header flit参与路径决策和链路占用。一旦确定了路径，其他flits（如body和tail flits）会沿着这条路径传输。
+2. **链路占用**：当一个数据包的header flit通过路由器时，它会占用必要的链路，直到整个数据包通过完毕。这意味着即使header flit已经离开，链路也会继续被该数据包的其他部分占用。
+3. **阻塞和释放**：如果在某个点上路由器不能向前传输flit（例如，由于下一个节点的缓冲区已满），则整个数据包在网络中的传输会停止，并且占用的链路会保持活跃，直到阻塞解除。当tail flit通过后，相关链路和资源将被释放。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # C++ 知识
 
 ### assert函数：

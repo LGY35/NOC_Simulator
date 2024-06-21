@@ -30,7 +30,7 @@ public:
         next = new NodeInfo();        // 下一个路由节点信息
         xtemp = new NodeInfo();       // 临时节点信息，用于X维度计算
         ytemp = new NodeInfo();       // 临时节点信息，用于Y维度计算
-        ztemp = new NodeInfo(); // 临时节点信息，用于Z维度计算
+        ztemp = new NodeInfo(); 	  // 临时节点信息，用于Z维度计算
 	}
 	NodeInfo *xtemp; // 用于处理X维度的节点信息
 	NodeInfo *ytemp; // 用于处理Y维度的节点信息
