@@ -1,5 +1,12 @@
 # Flow control based routing for 3D meshes
 
+## 问题
+
+1. 生成文件问题。cl1e-DOR
+2. 
+
+
+
 ## 任务要求：
 
 1、使用Java或C++写模拟器，用于模拟消息的路由过程（文件夹中给了一个模拟器样例，可以使用这个，也可以自己写）；
@@ -517,6 +524,65 @@ $2 = -136647936
 
 
 
+## 问题解决
+
+一直segment fault，是因为：
+
+```c++
+//将消息输出到测试文件
+void outtotest(vector<Message *> *allvecmess, Q3DMesh *mes)
+{
+    ofstream out = ofstream("test");  // 创建一个输出文件流
+    for (int i = 0; i < 10; i++)
+    {
+        vector<Message *> &vecmess = allvecmess[i];  // 引用每一个消息队列
+        for (vector<Message *>::iterator it = vecmess.begin(); it != vecmess.end(); it++)
+        {
+            // 输出消息的计数、源点和目的地坐标（包括z坐标），以及头部和尾部的信息
+            out << "count: " << (*it)->count 
+                << "  src: ( " << (*mes)[(*it)->src]->x << " ," << (*mes)[(*it)->src]->y << ", " << (*mes)[(*it)->src]->z << ")"
+                << " dst: ( " << (*mes)[(*it)->dst]->x << " ," << (*mes)[(*it)->dst]->y << ", " << (*mes)[(*it)->dst]->z << ")"
+                << " head:( " << (*mes)[(*it)->routpath[0].node]->x << " ," << (*mes)[(*it)->routpath[0].node]->y << ", " << (*mes)[(*it)->routpath[0].node]->z 
+                << ", R" << (*it)->routpath[0].channel << ")"//<<endl;
+                // int j = 0;
+                // while(1){
+                //     if((*it)->routpath[j].node != -1) j++;
+                //     else break;
+                // }  
+                // message length = 1
+                << " tail:( " << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->x << " ," << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->y << ", " << (*mes)[(*it)->routpath[MESSLENGTH - 1].node]->z << ")"
+                << endl;
+        }
+    }
+}
+```
+
+这个函数里面的tail那一行。
+
+首先，**注释掉这一行，看是不是还有错误**。
+
+发现没有。说明确实就是这一行的问题。
+
+然后**注释一半，只留下x部分**
+
+也是出错。
+
+**应该是数字的问题，19有问题。改一下数字，换成0。**
+
+没问题。说明根本没有19，所以肯定会访问超出界限，然后出错。所以需要查找tail的符号。
+
+（上述 注释的代码本来是想用`(*it)->routpath[j] != NULL`来计算（或者叫等到）最后一个tail。）
+
+最终查看到EVENT.cpp中，发现消息的长度只有 MESSLENGTH = 16（定义在Q3DMesh.h中），也就是说，包括了head和tail的flit，那么最终输出tali就只是MESSLENGTH -1的索引。
+
+
+
+> 这里还有个问题是，main函数最后return 1，正常的执行是return 0，而原来这里return了1，所以导致最后还是error，但是却没有报错信息。
+>
+> <img src="C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240621230800168.png" alt="image-20240621230800168" style="zoom:80%;" />
+
+
+
 
 
 ## 问题-遗漏代码未修改
@@ -769,11 +835,71 @@ Event.cpp代码描述了一种使用在计算机网络中的 **wormhole路由**�
 
 
 
+## VSCode 调试 launch.json 与语法检测
 
+GDB调试不是非常方便，所以使用VSCode的debug，只需要使用makefile编译出可执行文件NOC即可（可以改成NOC.elf）
 
+（Task是用来编译的，所以不需要。）
 
+==launch.json决定了debug能不能用。c_cpp_properties.json决定了语法检测功能能不能用。==
 
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
 
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Simulator/build/NOC",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+
+    ]
+}
+```
+
+这是**c_cpp_properties**：
+
+```json
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Simulator/src",
+                "${workspaceFolder}/Simulator/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
+```
 
 
 
