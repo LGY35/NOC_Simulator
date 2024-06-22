@@ -19,11 +19,11 @@ int main()
 {
 	for (int allgen = 1; allgen < 2; allgen++)	// 从 allgen = 1 开始，只执行一次，
 	{
-		int threshold = 80000; 					// 设置一个阈值，用于控制网络中的消息数量
+		int threshold = 8000+2000; 					// 设置一个阈值，用于控制网络中的消息数量
         Allrouting *rout1 = NULL; 				// 路由器对象指针，初始化为NULL
         GENERATETYPE = allgen; 					// 设置消息生成类型			//TODO: 更改消息生成类型，即流量模式  为1表示 uniform流量模式
         flowalg = 1; 							// 流控算法标识符
-        totalcircle = 10000; 					// 设置模拟的总周期数
+        totalcircle = 15000+2000; 					// 设置模拟的总周期数
         knode = 4; 								// 设置网络中每个维度的节点数
         Q3DMesh *mes = NULL; 		 			// 网络结构，3D mesh
         Event *s = NULL; 						// 事件处理对象指针，初始化为NULL
