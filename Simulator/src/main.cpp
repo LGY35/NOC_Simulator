@@ -5,6 +5,14 @@
 模拟信息（message）在网络中的路由过程。
 通过设置不同的路由算法和网络结构，测试不同条件下的网络性能，如延迟（latency）和吞吐量（throughput）。
   *********************/
+
+/**************************************************************
+arrive是到达的信息
+in the network是滞留在网络中的信息
+
+里面的虚拟通道只是给了buffer，但是实际路由的过程中没有用到，所以增加一下虚拟通道会有用的。
+***************************************************************/
+
 #include "common.h"
 
 int ALGORITHM;	  // 实现多个路由算法的时候执行的是哪一个，该程序只实现了一个，用于Routing.cpp中
@@ -19,7 +27,7 @@ int main()
 {
 	for (int allgen = 1; allgen < 2; allgen++)	// 从 allgen = 1 开始，只执行一次，
 	{
-		int threshold = 8000+2000; 					// 设置一个阈值，用于控制网络中的消息数量
+		int threshold = 8000+2000; 					// 设置一个阈值，用于控制网络中的消息数量，当滞留的消息达到阈值时就会饱和
         Allrouting *rout1 = NULL; 				// 路由器对象指针，初始化为NULL
         GENERATETYPE = allgen; 					// 设置消息生成类型			//TODO: 更改消息生成类型，即流量模式  为1表示 uniform流量模式
         flowalg = 1; 							// 流控算法标识符
@@ -176,7 +184,8 @@ int main()
 
 			  ***********************************************************************************/
 			// 判断是否达到饱和点
-				if (linkrate * ((float)s->messarrive / allmess) > max && ((linkrate * ((float)s->messarrive / allmess) - max) / max) > 0.01 && getsize(allvecmess) < threshold)
+				if (linkrate * ((float)s->messarrive / allmess) > max && ((linkrate * ((float)s->messarrive / allmess) - max) / max) > 0.01 )
+				// && getsize(allvecmess) < threshold)		//如果产生的消息大于阈值，直接饱和。  对于mesh可能没什么影响，但是对于torus承载流量大的，就可能会限制，滞留的消息达不到阈值也会饱和
 					max = linkrate * ((float)s->messarrive / allmess);
 
 				else

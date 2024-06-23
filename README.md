@@ -3,7 +3,8 @@
 ## 问题
 
 1. 生成文件问题。cl1e-DOR
-2. 
+2. 饱和速度问题
+3. 
 
 
 
@@ -903,17 +904,410 @@ GDB调试不是非常方便，所以使用VSCode的debug，只需要使用makefi
 
 
 
+# 输出
+
+![image-20240622103916105](C:\Users\LGY\AppData\Roaming\Typora\typora-user-images\image-20240622103916105.png)
+
+## 输出1
+
+### 条件：
+
+**threshold = 80000;**   
+
+**totalcircle = 10000;**
+
+### 输出结果：
+
+```bash
+linkrate:0.01    arrive:  1    in the network : 9
+average latency: 19  nomalized accepted traffic: 0.001
+
+
+linkrate:0.06    arrive:  9    in the network : 51
+average latency: 18.5556  nomalized accepted traffic: 0.009
+
+
+linkrate:0.11    arrive:  15    in the network : 95
+average latency: 18.8  nomalized accepted traffic: 0.015
+
+
+linkrate:0.16    arrive:  15    in the network : 145
+average latency: 19.1333  nomalized accepted traffic: 0.015
+
+Saturation point, drain.......
+in the network:      103
+buffer left ---> x-neg: 44, x-pos: 43, y-neg: 30, y-pos: 36, z-neg: 64, z-pos: 64
+max:0.015
+```
 
 
 
+#### 关键参数
+
+- **`linkrate`**: 表示网络链路的利用率或负载，从 0.01 递增到 0.16。
+- **`arrive`**: 表示成功到达目的地的消息数。
+- **`in the network`**: 表示在模拟结束时网络中还存在的消息数。
+- **`average latency`**: 表示消息从源到目的地平均所需的周期数。
+- **`normalized accepted traffic`**: 表示网络实际能够处理的有效流量（考虑到消息成功到达的比例）。
 
 
 
+#### 分析
+
+1. **链路利用率与网络性能**
+   - 随着 `linkrate` 从 0.01 增加到 0.16，`arrive` 的数量从 1 增加到 15，显示出网络能够处理更多消息，但在 `linkrate` 达到 0.11 后，到达数量不再增加，说明网络接近饱和状态。
+   - `average latency` 略有波动，从 19 到 18.5556 再到 19.1333，变化不大，这表明网络处理消息的速度相对稳定。
+2. **网络饱和点**
+   - 当 `linkrate` 达到 0.16 时，尽管负载增加，但 `normalized accepted traffic` 保持在 0.015 不变，表明进一步增加负载并未提高网络的吞吐量，即达到了饱和点。
+   - 在饱和点声明输出“Saturation point, drain......."，这表示网络无法处理更多的流量，需要进行资源释放。
+3. **资源状态**
+   - 网络在经历饱和和资源释放后，显示“in the network: 103”，表明即使在尝试清空网络后，仍有 103 条消息留在网络中。这可能是因为某些消息被严重阻塞或因链路资源限制无法前进。
+   - 缓冲区剩余情况显示不同方向的缓冲使用情况，有助于分析网络的瓶颈方向。例如，`z-neg` 和 `z-pos` 方向的缓冲剩余最多，可能意味着这些方向的链路利用率较低。
+
+#### 建议
+
+- **优化路由算法**：考虑改进或尝试不同的路由算法来更均匀地分配网络流量，减少某些链路的负载集中现象。
+- **调整网络参数**：根据网络在不同 `linkrate` 下的表现，调整如消息生成率、缓冲区大小或周期总数等参数，以寻求更优的网络性能。
+- **增强监控与管理**：加强对阻塞消息的处理策略，例如引入优先级机制或更智能的流量控制策略，以避免网络饱和导致的服务降级。
+
+### test文件：
+
+```bash
+count: 1984  src: ( 3 ,0, 3) dst: ( 0 ,2, 0) head:( 0 ,2, 3, R1) tail:( 0 ,2, 3)
+count: 1884  src: ( 2 ,2, 3) dst: ( 0 ,1, 1) head:( 0 ,2, 3, R1) tail:( 0 ,2, 3)
+count: 1859  src: ( 0 ,1, 2) dst: ( 0 ,2, 1) head:( 0 ,2, 2, R1) tail:( 0 ,2, 2)
+count: 1809  src: ( 0 ,3, 3) dst: ( 1 ,1, 2) head:( 1 ,1, 3, R1) tail:( 1 ,1, 3)
+count: 1759  src: ( 1 ,1, 0) dst: ( 1 ,0, 3) head:( 1 ,0, 0, R1) tail:( 1 ,0, 0)
+count: 1734  src: ( 3 ,2, 3) dst: ( 2 ,0, 2) head:( 2 ,1, 3, R1) tail:( 2 ,1, 3)
+count: 1709  src: ( 3 ,0, 2) dst: ( 3 ,3, 2) head:( 3 ,1, 2, R1) tail:( 3 ,1, 2)
+count: 1659  src: ( 3 ,3, 1) dst: ( 0 ,2, 3) head:( 0 ,2, 1, R1) tail:( 0 ,2, 1)
+count: 1609  src: ( 0 ,1, 2) dst: ( 3 ,0, 0) head:( 3 ,0, 2, R1) tail:( 3 ,0, 2)
+count: 1559  src: ( 3 ,1, 3) dst: ( 1 ,2, 0) head:( 1 ,2, 3, R1) tail:( 1 ,2, 3)
+count: 1509  src: ( 1 ,3, 0) dst: ( 2 ,1, 1) head:( 2 ,2, 0, R1) tail:( 2 ,2, 0)
+count: 1459  src: ( 3 ,2, 0) dst: ( 0 ,2, 0) head:( 2 ,2, 0, R1) tail:( 2 ,2, 0)
+count: 1434  src: ( 2 ,3, 2) dst: ( 3 ,0, 0) head:( 3 ,2, 2, R1) tail:( 3 ,2, 2)
+count: 1409  src: ( 1 ,3, 2) dst: ( 2 ,0, 1) head:( 2 ,3, 2, R1) tail:( 2 ,3, 2)
+count: 1384  src: ( 2 ,0, 2) dst: ( 2 ,1, 1) head:( 2 ,1, 2, R1) tail:( 2 ,1, 2)
+count: 1359  src: ( 1 ,2, 1) dst: ( 1 ,3, 0) head:( 1 ,3, 1, R1) tail:( 1 ,3, 1)
+count: 1284  src: ( 1 ,2, 2) dst: ( 0 ,3, 3) head:( 0 ,3, 2, R1) tail:( 0 ,3, 2)
+count: 1259  src: ( 2 ,3, 3) dst: ( 3 ,2, 2) head:( 3 ,2, 3, R1) tail:( 3 ,2, 3)
+count: 1234  src: ( 1 ,1, 3) dst: ( 3 ,1, 2) head:( 3 ,1, 3, R1) tail:( 3 ,1, 3)
+count: 1184  src: ( 3 ,3, 3) dst: ( 1 ,3, 0) head:( 1 ,3, 3, R1) tail:( 1 ,3, 3)
+count: 1134  src: ( 2 ,0, 0) dst: ( 0 ,1, 3) head:( 1 ,0, 0, R1) tail:( 1 ,0, 0)
+count: 1109  src: ( 1 ,0, 0) dst: ( 1 ,3, 0) head:( 1 ,1, 0, R1) tail:( 1 ,1, 0)
+count: 1034  src: ( 3 ,2, 1) dst: ( 3 ,3, 3) head:( 3 ,3, 1, R1) tail:( 3 ,3, 1)
+count: 1978  src: ( 0 ,1, 0) dst: ( 3 ,0, 1) head:( 3 ,0, 0, R1) tail:( 3 ,0, 0)
+count: 1953  src: ( 2 ,0, 3) dst: ( 3 ,1, 1) head:( 3 ,1, 3, R1) tail:( 3 ,1, 3)
+count: 1928  src: ( 1 ,1, 2) dst: ( 3 ,3, 0) head:( 3 ,3, 2, R1) tail:( 3 ,3, 2)
+count: 1878  src: ( 0 ,2, 1) dst: ( 1 ,1, 3) head:( 1 ,1, 1, R1) tail:( 1 ,1, 1)
+count: 1853  src: ( 1 ,2, 1) dst: ( 0 ,2, 2) head:( 0 ,2, 1, R1) tail:( 0 ,2, 1)
+count: 1828  src: ( 3 ,3, 3) dst: ( 2 ,0, 2) head:( 2 ,0, 3, R1) tail:( 2 ,0, 3)
+count: 1803  src: ( 1 ,2, 0) dst: ( 2 ,3, 0) head:( 2 ,2, 0, R1) tail:( 2 ,2, 0)
+count: 1753  src: ( 0 ,3, 0) dst: ( 2 ,1, 2) head:( 2 ,1, 0, R1) tail:( 2 ,1, 0)
+count: 1728  src: ( 0 ,3, 3) dst: ( 0 ,1, 2) head:( 0 ,2, 3, R1) tail:( 0 ,2, 3)
+count: 1703  src: ( 2 ,0, 2) dst: ( 0 ,3, 3) head:( 0 ,1, 2, R1) tail:( 0 ,1, 2)
+count: 1653  src: ( 1 ,3, 2) dst: ( 1 ,0, 1) head:( 1 ,0, 2, R1) tail:( 1 ,0, 2)
+count: 1628  src: ( 0 ,1, 1) dst: ( 2 ,1, 3) head:( 2 ,1, 1, R1) tail:( 2 ,1, 1)
+count: 1603  src: ( 3 ,1, 2) dst: ( 0 ,2, 1) head:( 0 ,1, 2, R1) tail:( 0 ,1, 2)
+count: 1578  src: ( 2 ,0, 0) dst: ( 0 ,2, 1) head:( 0 ,0, 0, R1) tail:( 0 ,0, 0)
+count: 1528  src: ( 2 ,0, 0) dst: ( 2 ,2, 0) head:( 2 ,1, 0, R1) tail:( 2 ,1, 0)
+count: 1503  src: ( 0 ,2, 2) dst: ( 2 ,2, 3) head:( 2 ,2, 2, R1) tail:( 2 ,2, 2)
+count: 1478  src: ( 2 ,2, 0) dst: ( 1 ,2, 1) head:( 1 ,2, 0, R1) tail:( 1 ,2, 0)
+count: 1453  src: ( 3 ,3, 0) dst: ( 1 ,0, 2) head:( 1 ,2, 0, R1) tail:( 1 ,2, 0)
+count: 1428  src: ( 0 ,2, 2) dst: ( 2 ,2, 1) head:( 1 ,2, 2, R1) tail:( 1 ,2, 2)
+count: 1403  src: ( 3 ,0, 1) dst: ( 1 ,2, 1) head:( 1 ,0, 1, R1) tail:( 1 ,0, 1)
+count: 1378  src: ( 2 ,2, 1) dst: ( 0 ,1, 1) head:( 1 ,2, 1, R1) tail:( 1 ,2, 1)
+count: 1353  src: ( 1 ,1, 0) dst: ( 3 ,0, 2) head:( 3 ,1, 0, R1) tail:( 3 ,1, 0)
+count: 1303  src: ( 3 ,1, 0) dst: ( 1 ,0, 2) head:( 2 ,1, 0, R1) tail:( 2 ,1, 0)
+count: 1278  src: ( 2 ,0, 3) dst: ( 1 ,0, 0) head:( 1 ,0, 3, R1) tail:( 1 ,0, 3)
+count: 1228  src: ( 3 ,3, 0) dst: ( 2 ,1, 3) head:( 2 ,3, 0, R1) tail:( 2 ,3, 0)
+count: 1178  src: ( 1 ,2, 2) dst: ( 0 ,3, 0) head:( 0 ,2, 2, R1) tail:( 0 ,2, 2)
+count: 1053  src: ( 3 ,0, 0) dst: ( 1 ,0, 1) head:( 2 ,0, 0, R1) tail:( 2 ,0, 0)
+count: 1028  src: ( 3 ,2, 2) dst: ( 2 ,3, 0) head:( 2 ,2, 2, R1) tail:( 2 ,2, 2)
+count: 1972  src: ( 2 ,2, 3) dst: ( 0 ,1, 1) head:( 0 ,1, 3, R1) tail:( 0 ,1, 3)
+count: 1947  src: ( 0 ,1, 0) dst: ( 2 ,3, 2) head:( 2 ,3, 0, R1) tail:( 2 ,3, 0)
+count: 1922  src: ( 0 ,2, 0) dst: ( 1 ,1, 3) head:( 1 ,1, 0, R1) tail:( 1 ,1, 0)
+count: 1872  src: ( 0 ,2, 2) dst: ( 0 ,1, 1) head:( 0 ,1, 2, R1) tail:( 0 ,1, 2)
+count: 1847  src: ( 3 ,1, 0) dst: ( 1 ,1, 3) head:( 1 ,1, 0, R1) tail:( 1 ,1, 0)
+count: 1822  src: ( 0 ,0, 0) dst: ( 1 ,2, 2) head:( 1 ,2, 0, R1) tail:( 1 ,2, 0)
+count: 1772  src: ( 0 ,0, 0) dst: ( 0 ,3, 2) head:( 0 ,3, 0, R1) tail:( 0 ,3, 0)
+count: 1747  src: ( 1 ,0, 3) dst: ( 0 ,3, 3) head:( 0 ,1, 3, R1) tail:( 0 ,1, 3)
+count: 1722  src: ( 2 ,1, 2) dst: ( 2 ,2, 1) head:( 2 ,2, 2, R1) tail:( 2 ,2, 2)
+count: 1697  src: ( 3 ,0, 0) dst: ( 0 ,1, 3) head:( 0 ,1, 0, R1) tail:( 0 ,1, 0)
+count: 1647  src: ( 0 ,1, 3) dst: ( 1 ,3, 2) head:( 1 ,3, 3, R1) tail:( 1 ,3, 3)
+count: 1622  src: ( 3 ,0, 2) dst: ( 1 ,1, 3) head:( 1 ,1, 2, R1) tail:( 1 ,1, 2)
+count: 1597  src: ( 1 ,3, 2) dst: ( 2 ,1, 1) head:( 2 ,1, 2, R1) tail:( 2 ,1, 2)
+count: 1572  src: ( 1 ,1, 2) dst: ( 2 ,2, 0) head:( 2 ,1, 2, R1) tail:( 2 ,1, 2)
+count: 1547  src: ( 2 ,1, 1) dst: ( 1 ,0, 0) head:( 1 ,0, 1, R1) tail:( 1 ,0, 1)
+count: 1522  src: ( 0 ,3, 2) dst: ( 1 ,2, 0) head:( 1 ,2, 2, R1) tail:( 1 ,2, 2)
+count: 1497  src: ( 0 ,3, 2) dst: ( 2 ,2, 3) head:( 2 ,2, 2, R1) tail:( 2 ,2, 2)
+count: 1422  src: ( 0 ,3, 0) dst: ( 3 ,1, 1) head:( 2 ,3, 0, R1) tail:( 2 ,3, 0)
+count: 1397  src: ( 0 ,3, 0) dst: ( 1 ,2, 3) head:( 1 ,3, 0, R1) tail:( 1 ,3, 0)
+count: 1372  src: ( 0 ,2, 1) dst: ( 1 ,0, 1) head:( 1 ,2, 1, R1) tail:( 1 ,2, 1)
+count: 1347  src: ( 1 ,0, 1) dst: ( 2 ,1, 0) head:( 2 ,1, 1, R1) tail:( 2 ,1, 1)
+count: 1297  src: ( 0 ,3, 3) dst: ( 3 ,0, 1) head:( 3 ,0, 3, R1) tail:( 3 ,0, 3)
+count: 1247  src: ( 1 ,0, 3) dst: ( 3 ,2, 0) head:( 3 ,0, 3, R1) tail:( 3 ,0, 3)
+count: 1222  src: ( 2 ,2, 2) dst: ( 2 ,3, 3) head:( 2 ,3, 2, R1) tail:( 2 ,3, 2)
+count: 1197  src: ( 2 ,3, 3) dst: ( 3 ,0, 0) head:( 3 ,3, 3, R1) tail:( 3 ,3, 3)
+count: 1147  src: ( 3 ,1, 0) dst: ( 3 ,2, 1) head:( 3 ,2, 0, R1) tail:( 3 ,2, 0)
+count: 1122  src: ( 2 ,0, 3) dst: ( 2 ,1, 1) head:( 2 ,1, 3, R1) tail:( 2 ,1, 3)
+count: 1097  src: ( 0 ,0, 1) dst: ( 3 ,2, 0) head:( 3 ,2, 1, R1) tail:( 3 ,2, 1)
+count: 1072  src: ( 3 ,3, 1) dst: ( 2 ,3, 0) head:( 2 ,3, 1, R1) tail:( 2 ,3, 1)
+count: 1047  src: ( 0 ,3, 3) dst: ( 3 ,1, 2) head:( 2 ,3, 3, R1) tail:( 2 ,3, 3)
+count: 1941  src: ( 3 ,2, 1) dst: ( 0 ,3, 3) head:( 0 ,3, 1, R1) tail:( 0 ,3, 1)
+count: 1891  src: ( 0 ,0, 1) dst: ( 1 ,1, 0) head:( 1 ,1, 1, R1) tail:( 1 ,1, 1)
+count: 1866  src: ( 2 ,1, 2) dst: ( 2 ,0, 0) head:( 2 ,0, 2, R1) tail:( 2 ,0, 2)
+count: 1841  src: ( 1 ,1, 2) dst: ( 0 ,0, 3) head:( 0 ,0, 2, R1) tail:( 0 ,0, 2)
+count: 1816  src: ( 0 ,1, 0) dst: ( 2 ,3, 1) head:( 2 ,2, 0, R1) tail:( 2 ,2, 0)
+count: 1766  src: ( 3 ,1, 1) dst: ( 0 ,1, 2) head:( 0 ,1, 1, R1) tail:( 0 ,1, 1)
+count: 1741  src: ( 0 ,0, 0) dst: ( 0 ,3, 3) head:( 0 ,2, 0, R1) tail:( 0 ,2, 0)
+count: 1716  src: ( 1 ,0, 2) dst: ( 3 ,2, 0) head:( 3 ,2, 2, R1) tail:( 3 ,2, 2)
+count: 1691  src: ( 1 ,2, 2) dst: ( 3 ,3, 2) head:( 3 ,2, 2, R1) tail:( 3 ,2, 2)
+count: 1666  src: ( 0 ,3, 2) dst: ( 3 ,1, 0) head:( 3 ,1, 2, R1) tail:( 3 ,1, 2)
+count: 1641  src: ( 1 ,3, 0) dst: ( 3 ,3, 2) head:( 3 ,3, 0, R1) tail:( 3 ,3, 0)
+count: 1591  src: ( 2 ,0, 1) dst: ( 0 ,3, 2) head:( 0 ,2, 1, R1) tail:( 0 ,2, 1)
+count: 1566  src: ( 0 ,2, 3) dst: ( 1 ,3, 1) head:( 1 ,2, 3, R1) tail:( 1 ,2, 3)
+count: 1541  src: ( 0 ,1, 3) dst: ( 3 ,3, 1) head:( 3 ,3, 3, R1) tail:( 3 ,3, 3)
+count: 1516  src: ( 2 ,3, 2) dst: ( 0 ,0, 1) head:( 0 ,2, 2, R1) tail:( 0 ,2, 2)
+count: 1466  src: ( 3 ,1, 3) dst: ( 2 ,2, 2) head:( 2 ,2, 3, R1) tail:( 2 ,2, 3)
+count: 1441  src: ( 0 ,0, 0) dst: ( 2 ,3, 1) head:( 2 ,0, 0, R1) tail:( 2 ,0, 0)
+count: 1416  src: ( 2 ,2, 2) dst: ( 1 ,2, 1) head:( 1 ,2, 2, R1) tail:( 1 ,2, 2)
+count: 1366  src: ( 2 ,3, 3) dst: ( 0 ,1, 2) head:( 0 ,3, 3, R1) tail:( 0 ,3, 3)
+count: 1216  src: ( 0 ,1, 2) dst: ( 3 ,3, 3) head:( 1 ,1, 2, R1) tail:( 1 ,1, 2)
+count: 1191  src: ( 3 ,2, 1) dst: ( 3 ,1, 2) head:( 3 ,1, 1, R1) tail:( 3 ,1, 1)
+count: 1116  src: ( 0 ,3, 2) dst: ( 3 ,0, 3) head:( 1 ,3, 2, R1) tail:( 1 ,3, 2)
+```
 
 
 
+计算一下所有的count：
+
+```python
+# Sum of all count values from the provided data
+
+counts = [
+    1984, 1884, 1859, 1809, 1759, 1734, 1709, 1659, 1609, 1559,
+    1509, 1459, 1434, 1409, 1384, 1359, 1284, 1259, 1234, 1184,
+    1134, 1109, 1034, 1978, 1953, 1928, 1878, 1853, 1828, 1803,
+    1753, 1728, 1703, 1653, 1628, 1603, 1578, 1528, 1503, 1478,
+    1453, 1428, 1403, 1378, 1366, 1353, 1303, 1278, 1228, 1178,
+    1053, 1028, 1972, 1947, 1922, 1872, 1847, 1822, 1772, 1747,
+    1722, 1697, 1666, 1641, 1591, 1566, 1541, 1516, 1466, 1441,
+    1416, 1372, 1347, 1297, 1247, 1222, 1197, 1147, 1122, 1097,
+    1072, 1047, 1941, 1891, 1866, 1841, 1816, 1766, 1741, 1716,
+    1691, 1647, 1622, 1597, 1572, 1547, 1522, 1497, 1422, 1397, 1372, 1347
+]
+
+total_count = sum(counts)
+total_count
+```
+
+所有的 `count` 值加起来等于 157,324。
 
 
+
+### 调整 `threshold` 与 `totalcircle` 变量值
+
+#### 1. `count` 与 `threshold` 与 `totalcircle` 的关系
+
+- **`count`:** 在代码中，`count` 似乎表示每个 `Message` 对象自其创建以来在网络中传输的周期数。每个消息对象有一个 `count` 属性，该属性在每次消息转发时递增，用于追踪消息从源到目的地的延迟。
+- **`threshold`:** 这个变量设置为 80000，用于控制在模拟过程中网络中可以存在的消息的最大数量。一旦消息的总数量超过这个阈值，模拟将停止生成新的消息。这是一种防止网络过载和保持模拟管理性的措施。
+- **`totalcircle`:** 设置为 10000，表示模拟的总周期数。这意味着模拟将在 10000 个周期后结束，除非消息的总数先达到了 `threshold`。
+
+#### 2. 合适的 `threshold` 和 `totalcircle` 设置
+
+这两个参数的合适值取决于您希望网络承载的负载水平以及您希望模拟运行的时间长度。这里的设置必须基于模拟目标和网络容量：
+
+- **如果目标是测试网络在高负载下的性能**（例如，考察拥塞控制和网络饱和点），则可能需要一个高的 `threshold` 值来允许更多的消息在网络中积累。同时，`totalcircle` 也需要足够大，以便网络达到稳态或饱和状态。
+- **如果目标是观察网络的快速响应**或在较低负载下的性能，则可以设置较低的 `threshold` 和 `totalcircle`，以便快速完成模拟并观察结果。
+
+#### 具体建议：
+
+- **`threshold`**: 如果您的网络模型是高容量和高复杂度的，或者如果您希望测试网络在接近实际负载下的表现，可以将 `threshold` 提高到 100000 或更高。这会允许更多消息同时在网络中存在，有助于测试网络在高负载情况下的行为。
+- **`totalcircle`**: 如果模拟目的是测试在持续高负载下网络的长期性能，可以将 `totalcircle` 增加到 20000 或更多周期。这样可以更全面地观察网络在长时间运行后的稳定性和性能指标。
+
+##### 选择合适的 `threshold` 值
+
+`threshold` 代表在网络中可以存在的消息的最大数量。选择合适的 `threshold` 值时应考虑以下因素：
+
+1. **网络规模**：网络节点数越多，相应的 `threshold` 应该更高，以便允许更多消息同时在网络中传输，这有助于更好地模拟大规模网络环境。
+2. **处理能力**：确保模拟的计算机或服务器的处理能力可以处理设定的消息数量，以避免过载。
+3. **目标分析**：如果重点是分析网络在高负载下的表现，`threshold` 应设置得相对较高，这样可以观察到网络接近或达到饱和状态时的行为。
+
+建议根据网络的节点数 k3k^3k3 选择 `threshold`。例如，如果 k=4k = 4k=4，网络总节点数为 64，`threshold` 可以设置为接近或超过这个数的几倍，比如 5000 到 8000，以观察网络在较高负载下的性能。
+
+##### 选择合适的 `totalcircle` 值
+
+`totalcircle` 定义了模拟的总周期数，这影响到模拟的持续时间和深度。
+
+1. **实验目的**：长周期有助于观察长期的网络性能表现，包括消息在复杂网络条件下的传输特性。
+2. **资源限制**：更多的周期意味着更高的计算需求和更长的运行时间。确保设置的周期数在可接受的运行时间内能完成。
+3. **测试需求**：周期数应足以观察到网络在不同负载下从稳态到可能的饱和状态的转变。
+
+如果 `threshold` 被设为较高值，`totalcircle` 也应相应增加，以允许网络状态充分发展，观察到饱和或稳定状态。例如，可以设置为 10000 到 20000，以确保网络动态得到充分的展示。
+
+##### 结合实验设置
+
+结合以上两个参数，推荐的设置可能如下：
+
+- **`threshold = 8000;`**
+- **`totalcircle = 15000;`**
+
+这样的设置可以平衡模拟的详尽程度和计算资源的合理使用，特别是对于研究 uniform 流量模式下的网络行为非常有用。
+
+
+
+## 输出2
+
+### 条件2
+
+- **`threshold = 8000;`**
+- **`totalcircle = 15000;`**
+
+### 输出结果：
+
+```bash
+linkrate:0.01    arrive:  1    in the network : 14
+average latency: 19  nomalized accepted traffic: 0.000666667
+
+
+linkrate:0.06    arrive:  9    in the network : 81
+average latency: 18.2222  nomalized accepted traffic: 0.006
+
+
+linkrate:0.11    arrive:  24    in the network : 141
+average latency: 18.3333  nomalized accepted traffic: 0.016
+
+
+linkrate:0.16    arrive:  29    in the network : 211
+average latency: 18.4138  nomalized accepted traffic: 0.0193333
+
+
+linkrate:0.21    arrive:  29    in the network : 287
+average latency: 19.2069  nomalized accepted traffic: 0.0192722
+
+Saturation point, drain.......
+in the network:      139
+buffer left ---> x-neg: 28, x-pos: 33, y-neg: 29, y-pos: 27, z-neg: 64, z-pos: 64
+max:0.0193333
+```
+
+
+
+## 输出3
+
+- **`threshold = 10000;`**
+- **`totalcircle = 17000;`**
+
+```bash
+linkrate:0.01    arrive:  1    in the network : 16
+average latency: 19  nomalized accepted traffic: 0.000588235
+
+
+linkrate:0.06    arrive:  12    in the network : 90
+average latency: 18.0833  nomalized accepted traffic: 0.00705882
+
+
+linkrate:0.11    arrive:  21    in the network : 166
+average latency: 18.4286  nomalized accepted traffic: 0.0123529
+
+
+linkrate:0.16    arrive:  26    in the network : 246
+average latency: 18.2692  nomalized accepted traffic: 0.0152941
+
+
+linkrate:0.21    arrive:  28    in the network : 330
+average latency: 18.5714  nomalized accepted traffic: 0.0164246
+
+
+linkrate:0.26    arrive:  26    in the network : 417
+average latency: 17.8462  nomalized accepted traffic: 0.0152596
+
+Saturation point, drain.......
+in the network:      147
+buffer left ---> x-neg: 23, x-pos: 24, y-neg: 32, y-pos: 30, z-neg: 64, z-pos: 64
+max:0.0164246
+```
+
+
+
+### 结果对比：
+
+> 前两次对比：
+>
+> #### 分析影响因素：
+>
+> 1. **`threshold`的影响**：
+>    - 更高的`threshold`（80000）允许网络处理更多的消息而不达到饱和状态，这可能导致`in the network`的值较低，因为网络能够在不饱和的状态下持续处理消息。
+>    - 较低的`threshold`（8000）导致网络更快达到饱和，因此在较低的`linkrate`时就已经显示出高`in the network`的数量。这表明网络中有大量消息未能及时处理，导致网络拥堵。
+> 2. **`totalcircle`的影响**：
+>    - 较短的周期数（10000）可能没有足够的时间让消息流穿越网络，导致了较高的`average latency`和较低的`normalized accepted traffic`。
+>    - 较长的周期数（15000）提供了更多时间来处理消息，可能导致更多消息成功到达其目的地，表现为更高的`arrive`值和更低的平均延迟。
+>
+> #### 对比输出结果的关键指标：
+>
+> - **消息到达数(`arrive`)**：
+>   - 在`threshold = 80000; totalcircle = 10000;`时，到达数较低，表明网络较早达到饱和。
+>   - 在`threshold = 8000; totalcircle = 15000;`时，到达数更高，显示出在增加周期数的情况下，更多的消息得到处理。
+> - **网络中的消息数(`in the network`)**：
+>   - 较低的`threshold`导致更高的`in the network`值，表明消息在网络中堆积。
+> - **平均延迟(`average latency`)**：
+>   - 更长的`totalcircle`有助于降低平均延迟，因为消息有更多的时间被处理。
+> - **归一化接受流量(`normalized accepted traffic`)**：
+>   - 较高的归一化接受流量在较高的`threshold`设置下出现，表明网络在处理更多消息方面更为有效。
+>
+> #### 结论：
+>
+> - **调整`threshold`和`totalcircle`**：这两个参数对网络性能的影响显著。`threshold`较高可以减轻网络在高流量下的压力，而`totalcircle`的增加则有助于提高消息处理的效率和降低平均延迟。
+> - **网络设计建议**：根据实际需求调整这两个参数。如果网络需要处理大量数据且对延迟敏感，建议提高`threshold`和`totalcircle`以优化性能。
+
+三次的对比：
+
+#### 参数设置：
+
+1. 原始参数
+
+   ：`threshold = 80000;`
+
+   - `totalcircle = 10000;`
+
+2. 第一次调整
+
+   ：`threshold = 8000;`
+
+   - `totalcircle = 15000;`
+
+3. 第二次调整
+
+   ：`threshold = 10000;`
+
+   - `totalcircle = 17000;`
+
+#### 结果对比：
+
+- **消息到达率（`arrive`）**：
+  - 在原始参数下，消息到达率较低，随着 `threshold` 的降低，到达率有所增加。这可能是因为降低 `threshold` 后，系统更快地达到饱和，导致更多消息在较短时间内被处理。
+  - 在第二次调整后，到达率与第一次调整相近，显示出一定的稳定性。
+- **在网络中的消息数量（`in the network`）**：
+  - 在网络中的消息数量在调整后显著增加，这表明较低的 `threshold` 和较高的 `totalcircle` 允许更多的消息在网络中累积，反映出网络的处理能力在逐渐增加。
+- **平均延迟（`average latency`）**：
+  - 所有情况下的平均延迟都相对稳定，说明即使网络负载增加，平均延迟并没有显著变化，这可能是由于有效的路由算法和缓冲管理机制。
+- **归一化接受交通量（`nomalized accepted traffic`）**：
+  - 归一化接受交通量在逐渐提高，显示网络在更高负载下仍能有效处理消息。特别是在第二次调整后，尽管 `threshold` 和 `totalcircle` 的提高使得网络可以容纳更多消息，归一化交通量仍表现出稳定增长。
+
+#### 结论：
+
+通过调整 `threshold` 和 `totalcircle`，我们可以看到网络处理能力的提升和延迟的相对稳定。这表明通过合理设置这两个参数，可以在不牺牲延迟的前提下增加网络的吞吐量。调整参数对网络性能有直接的影响，特别是在高负载情况下，如何平衡消息到达率与系统延迟成为关键：
+
+1. **提高`threshold`** 可以允许更多消息在网络中存在，这有助于提高系统的利用率，但同时也可能引起拥堵，尤其是在节点或链路资源有限的情况下。
+2. **增加`totalcircle`** 提供了更长的时间窗口来处理消息，这有助于处理更多的累积消息，但也意味着在达到饱和点前，系统需要运行更长时间。
+3. 结果显示，随着 `linkrate` 的增加，网络能够在饱和前处理更多的消息，但随后迅速达到饱和点。饱和点后，网络中的消息数量显著增多，表明进一步增加 `linkrate` 已无法有效提升吞吐量，反而可能导致网络性能下降。
+
+#### 总结：
+
+- 对于实验设置而言，适当的 `threshold` 和 `totalcircle` 设置是实现高效网络运行的关键。对于不同的网络配置和预期的流量模式，应根据实际需求调整这些参数。
+- 在实际应用中，应继续观察不同参数设置下的网络性能，特别是在不同的流量模式和网络负载条件下，以找到最佳的参数平衡点。
+- 考虑到实验结果，建议在后续实验中进一步增加 `threshold` 和 `totalcircle` 的值，观察在更高负载和更长周期下网络的表现，以及是否可以进一步推迟饱和点的出现，从而提高网络的整体性能。
 
 
 
